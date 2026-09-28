@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+results/
+section_curve.csv
+.DS_Store
+Thumbs.db

@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, cite this repository and its associated manuscript."
+type: software
+title: "CFRP-wrapped tube section family"
+version: 1.0.0
+date-released: 2026-09-28
+repository-code: "https://github.com/math-sudu/cfrp-section-family"
+authors:
+  - family-names: Zhu
+    given-names: Pengcheng
+  - family-names: Chen
+    given-names: Tielin
+  - family-names: Zhang
+    given-names: Dingli
+  - family-names: Dai
+    given-names: Yuchen
+  - family-names: Shi
+    given-names: Ye

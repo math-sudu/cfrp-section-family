@@ -1,0 +1,3 @@
+quantity_family,figure_id,fignum,x_role,x_category,condition_series,ultimate_capacity_kN
+ultimate_bearing_capacity,5083,3-6,specimen,C,极限承载力,18.912
+ultimate_bearing_capacity,5083,3-6,specimen,C-1,极限承载力,20.868
