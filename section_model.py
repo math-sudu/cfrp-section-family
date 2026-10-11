@@ -1,8 +1,10 @@
-"""Call the fitted section-law family without the parent project or a refit.
+"""Evaluate the fitted compact section network and its integral physics decoder.
 
 Run ``python section_model.py --help`` or see README.md for the NumPy API.
-The complete coefficient matrix is read from the current fit JSON. ``Mk``
-is the transition scale called ``Mcr`` in the retained fit/analysis records.
+The fit JSON stores one affine parameter layer: two softplus scale units
+and two bias-only sigmoid shape units, with 18 independent coefficients.
+The prescribed decoder integrates the tangent and solves its capacity
+endpoint. ``Mk`` is the transition scale called ``Mcr`` in the fit records.
 """
 from __future__ import annotations
 
@@ -19,7 +21,7 @@ DEFAULT_FIT = Path(__file__).resolve().parent / "data/model/coefficients.json"
 
 
 class SectionFamily:
-    """Fixed coefficients, one normalized shape and two configuration scales."""
+    """Trained parameter layer, shared tangent shape and integral decoder."""
 
     def __init__(self, fit_path=DEFAULT_FIT):
         fit = json.loads(Path(fit_path).read_text(encoding="utf-8"))

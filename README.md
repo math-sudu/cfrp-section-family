@@ -1,8 +1,14 @@
 # CFRP-wrapped tube section family
 
-Research code and executable input data for **Mechanics-constrained
-identification of a moment-curvature family for CFRP-wrapped cement-filled
-steel tubes**, by Pengcheng Zhu, Tielin Chen, Dingli Zhang, Yuchen Dai and Ye Shi.
+Research code and executable input data for **Flexural assessment of CFRP
+composite tubes for tunnel lining reinforcement using an integral constrained
+physics informed neural network**, by Pengcheng Zhu, Tielin Chen, Dingli Zhang,
+Yuchen Dai and Ye Shi.
+
+This local working version includes the 29 September curve-peak correction:
+all six campaign-2 fitting peaks follow their curves, including S30-1 at
+18.7595 kN. The original published v1.0.0 remains in Git history; these local
+changes have not been pushed or published as a new release.
 
 The model identifies a shared dimensionless moment-curvature shape and two
 configuration-dependent scales from member bending records. Its positive
@@ -30,8 +36,8 @@ python -m examples.member_response
 The first command prints the section parameters. Add `--curve section_curve.csv`
 to export its ascending moment-curvature curve. The second evaluates a simply
 supported member under central loading. At a 490 mm span, the filled 32 mm
-tube with a nominal 2 mm wrap has predicted peak load **48.977 kN** and peak-load
-deflection **9.562 mm**.
+tube with a nominal 2 mm wrap has predicted peak load **48.043 kN** and peak-load
+deflection **9.288 mm**.
 
 ```python
 import numpy as np

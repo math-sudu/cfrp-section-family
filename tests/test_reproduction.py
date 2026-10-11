@@ -12,8 +12,8 @@ class ReproductionTests(unittest.TestCase):
     def test_member_prediction_and_strength_endpoint(self):
         section = SectionFamily().section(depth_mm=32, wrap_mm=2, grouted=True, campaign=1)
         load, displacement = member_response(section, 490.0, [0.2, 0.5, 1.0])
-        np.testing.assert_allclose(load[-1] / 1000.0, 48.97690123100707, rtol=1e-10)
-        np.testing.assert_allclose(displacement, [1.360, 3.433, 9.562], atol=0.001)
+        np.testing.assert_allclose(load[-1] / 1000.0, 48.04273594292151, rtol=1e-10)
+        np.testing.assert_allclose(displacement, [1.326, 3.345, 9.288], atol=0.001)
         kappa = np.linspace(0, section.kappa_u, 301)
         moment = section.moment(kappa)
         self.assertTrue(np.all(np.diff(moment) > 0))
@@ -29,9 +29,9 @@ class ReproductionTests(unittest.TestCase):
         calibration_ids = {row["source_id"] for row in result["calibration"]}
         self.assertFalse(calibration_ids & {row["source_id"] for row in reserved})
         errors = sorted(row["curve_rel_l2"] for row in reserved)
-        np.testing.assert_allclose(errors, [0.127, 0.132, 0.231, 0.232], atol=0.001)
+        np.testing.assert_allclose(errors, [0.118, 0.138, 0.214, 0.219], atol=0.001)
         np.testing.assert_allclose(result["additional_S30_response"]["curve_rel_l2"],
-                                   0.544, atol=0.001)
+                                   0.561, atol=0.001)
 
     def test_lining_geometry_and_section_transfer(self):
         baseline, seed, section, _, _ = inputs("baseline", 20, 2.0)

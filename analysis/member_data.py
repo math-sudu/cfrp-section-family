@@ -47,7 +47,7 @@ def load_doc13_curve(specimen: str, *, data_root: Path = TUST_ROOT,
         [float(r["load_kN"]) for r in rows],
     )
     capacities = _read_doc13_capacities(data_root)
-    peak = capacities.get(specimen)
+    peak = None if specimen in DOC13_CALIBRATION else capacities.get(specimen)
     curve = MemberCurve(
         ConfigFeatures(depth, wrap, infill, "doc13", extras={
             "framing": "stainless_steel", "source_specimen": specimen,
