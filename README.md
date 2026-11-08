@@ -82,7 +82,7 @@ Refit outputs are separate from the supplied fitted coefficients.
 
 ## Files and information conditions
 
-- `data/tubes/`: configurations and digitized displacement–load curves.
+- `data/tubes/`: configurations and measured displacement–load curves.
 - `data/beams/`: configurations, two specimen responses per design, strain
   observations and the connector law.
 - `parameters/`: fitted coefficients, networks and configuration partitions.
