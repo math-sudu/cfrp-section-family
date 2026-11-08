@@ -1,0 +1,17 @@
+configuration,depth_mm,wrap_mm,filled,table_peak_kn
+empty_d30_t0,30,0,0,16.86
+empty_d32_t0,32,0,0,19.12
+empty_d35_t0,35,0,0,25.45
+filled_d30_t0,30,0,1,20.6
+filled_d32_t0,32,0,1,24.01
+filled_d35_t0,35,0,1,30.65
+empty_d30_t1,30,1,0,20.79
+empty_d32_t1,32,1,0,21.74
+empty_d35_t1,35,1,0,27.88
+filled_d30_t1,30,1,1,30.65
+filled_d32_t1,32,1,1,36.96
+filled_d35_t1,35,1,1,49.03
+empty_d30_t2,30,2,0,32.76
+empty_d32_t2,32,2,0,36.05
+filled_d30_t2,30,2,1,43.56
+filled_d32_t2,32,2,1,51.13

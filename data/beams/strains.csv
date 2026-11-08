@@ -1,0 +1,5 @@
+configuration,role,load_kn,distance_from_midspan_mm,microstrain
+U90S100,training,310,100,1716
+U90S100,training,310,400,980
+ST65S100,evaluation,310,95,1300
+ST65S100,evaluation,310,380,510

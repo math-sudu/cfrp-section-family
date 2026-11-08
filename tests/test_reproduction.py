@@ -1,49 +1,66 @@
-"""Executable checks of the released model, records and lining inputs."""
+"""Exercise the published prediction entry point and its experimental inputs."""
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import unittest
+
 import numpy as np
+import torch
 
-from analysis.evaluate import evaluate
-from analysis.lining_inputs import inputs
-from examples.member_response import member_response
-from section_model import SectionFamily
+from frp_flexure import beam
+from frp_flexure.data import ROOT, load_beams, load_tubes, parameters
+from refit import peak_fit
 
 
-class ReproductionTests(unittest.TestCase):
-    def test_member_prediction_and_strength_endpoint(self):
-        section = SectionFamily().section(depth_mm=32, wrap_mm=2, grouted=True, campaign=1)
-        load, displacement = member_response(section, 490.0, [0.2, 0.5, 1.0])
-        np.testing.assert_allclose(load[-1] / 1000.0, 48.04273594292151, rtol=1e-10)
-        np.testing.assert_allclose(displacement, [1.326, 3.345, 9.288], atol=0.001)
-        kappa = np.linspace(0, section.kappa_u, 301)
-        moment = section.moment(kappa)
-        self.assertTrue(np.all(np.diff(moment) > 0))
-        np.testing.assert_allclose(moment[-1], section.Mu, rtol=1e-9)
-        np.testing.assert_allclose(section.curvature(moment), kappa, atol=1e-12)
+class ReproductionTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "predictions.json"
+            subprocess.run([sys.executable, "reproduce.py", "--output", str(output)],
+                           cwd=ROOT, check=True)
+            cls.result = json.loads(output.read_text(encoding="utf-8"))
 
-    def test_data_roles_and_reported_predictions(self):
-        result = evaluate()
-        self.assertEqual(len(result["calibration"]), 18)
-        reserved = result["development_reserved"]
-        self.assertEqual(len(reserved), 4)
-        self.assertEqual(len(result["additional_capacities"]), 6)
-        calibration_ids = {row["source_id"] for row in result["calibration"]}
-        self.assertFalse(calibration_ids & {row["source_id"] for row in reserved})
-        errors = sorted(row["curve_rel_l2"] for row in reserved)
-        np.testing.assert_allclose(errors, [0.118, 0.138, 0.214, 0.219], atol=0.001)
-        np.testing.assert_allclose(result["additional_S30_response"]["curve_rel_l2"],
-                                   0.561, atol=0.001)
+    def test_inputs_and_partitions(self):
+        self.assertEqual(len(load_tubes()), 16)
+        inputs = load_beams()
+        self.assertEqual(len(inputs), 13)
+        fitted = parameters("beams")
+        self.assertFalse(set(fitted["training"]) & set(fitted["testing"]))
+        self.assertEqual(len(fitted["training"]), 10)
 
-    def test_lining_geometry_and_section_transfer(self):
-        baseline, seed, section, _, _ = inputs("baseline", 20, 2.0)
-        self.assertEqual(baseline.n_nodes, 16519)
-        self.assertEqual(baseline.T.shape, (31078, 3))
-        self.assertEqual(len(baseline.bnd_idx), 1029)
-        self.assertEqual(seed.shape, (16519,))
-        self.assertIsNone(section)
-        hybrid, _, section, mapping, _ = inputs("hybrid_018", 20, 2.0)
-        pitch = mapping["double_layer"]["pitch_mm"]
-        np.testing.assert_allclose(hybrid.overlay.EI_N_mm2, section.EI0 / pitch, rtol=1e-12)
-        np.testing.assert_allclose(hybrid.viscous_dt, 44495302.32, rtol=1e-12)
+    def test_tube_tables(self):
+        results = self.result["tubes"]
+        self.assertAlmostEqual(results["leave_depth_30"]["central_increment_rmse_mm"]["M_T"], .319, delta=.0005)
+        for name, expected in [("leave_depth_32", .101), ("leave_depth_35", .256), ("leave_wrap_2", .071)]:
+            self.assertAlmostEqual(results[name]["common_force_saving_rmse_mm"]["M_T"], expected, delta=.0005)
+        row = results["leave_wrap_2"]
+        self.assertAlmostEqual(row["affine_selected_rmse_mm"], .127, delta=.0005)
+        self.assertAlmostEqual(row["affine_window_rmse_mm"], .125, delta=.0005)
+        self.assertAlmostEqual(row["predicted_window_rmse_mm"]["M_T"], .081, delta=.0005)
+
+    def test_beam_predictions(self):
+        for model, expected in [("M_R", .436), ("M_0", .429), ("M_B", .280), ("M_N", .269)]:
+            self.assertAlmostEqual(self.result["beams"][model]["aggregate_rmse_mm"], expected, delta=.0005)
+        np.testing.assert_allclose(self.result["beams"]["M_N"]["predicted_strain_microstrain"],
+                                   [1254.025000764922, 582.8542792815358], atol=1e-5)
+
+    def test_fiber_strain(self):
+        solution = parameters("beams")["models"]["M_F"]
+        compliance = beam.observed_compliances(load_beams())
+        gauge = beam.ConditionedFiber(["ST65S100"], [310.], compliance, **solution["prediction_options"])
+        with torch.no_grad():
+            strain = gauge.strain(torch.tensor(solution["log_parameters"]), [(95., 380.)])[0].numpy()
+        np.testing.assert_allclose(strain, [1257.3649200697068, 584.3055802105234], atol=1e-4)
+
+    def test_peak_refit(self):
+        record = parameters("tubes")["leave_wrap_2"]
+        traces = {t.key: t for t in load_tubes()}
+        training = [traces[k] for k in record["training"]]
+        fitted = peak_fit(training, record["peak_model"]["penalty"], record["peak_model"]["seed"])
+        np.testing.assert_allclose(fitted["theta"], record["peak_model"]["theta"], atol=1e-6)
 
 
 if __name__ == "__main__":

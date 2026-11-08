@@ -3,6 +3,5 @@ __pycache__/
 .pytest_cache/
 .venv/
 results/
-section_curve.csv
 .DS_Store
 Thumbs.db

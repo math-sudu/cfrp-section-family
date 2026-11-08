@@ -1,0 +1,14 @@
+specimen,arrangement,patch_length_mm,patch_thickness_mm,bolt_spacing_mm,bolt_count
+ST45S100,staggered,810,3.175,100,16
+ST65S100,staggered,1170,3.175,100,24
+ST90D35,staggered,1620,6.350,35,96
+ST90D45,staggered,1620,6.350,45,72
+ST90S100,staggered,1620,3.175,100,32
+ST90S150,staggered,1620,3.175,150,20
+ST90S45,staggered,1620,3.175,45,72
+U45D35,uniform,810,6.350,35,48
+U45S100,uniform,810,3.175,100,16
+U65D35,uniform,1170,6.350,35,72
+U65S100,uniform,1170,3.175,100,24
+U90D35,uniform,1620,6.350,35,96
+U90S100,uniform,1620,3.175,100,32

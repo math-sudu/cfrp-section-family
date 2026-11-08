@@ -1,70 +1,76 @@
-# Executable inputs
+# Experimental inputs
 
-Paths are relative to the repository root. The data accompany the runnable
-code; numerical results are generated under `results/`.
+Column names give units: millimetres, kilonewtons and microstrain. The tube
+material calculation uses N and mm internally; the beam calculation uses kN
+and mm. Configuration partitions and fitted coefficients are in `../parameters/`.
 
-## Member tests
+## Square tubes
 
-| File | Meaning |
-|---|---|
-| `data/members/campaign1/load_deflection_curves.csv` | Digitized deflection in mm and load in kN for the sixteen first-campaign configurations. |
-| `data/members/campaign1/table2-4` through `table2-7` | Two reported specimen peaks and their printed mean for each of twelve calibration configurations, in kN. |
-| `data/members/campaign1/table2-8_peak_load_summary_kn.csv` | Reported means used as the first-campaign calibration peaks. |
-| `data/members/campaign1/table4-1_test_vs_sim_2mm_peak_load_kn.csv` | Experimental rows for the four development-reserved peaks. |
-| `data/members/campaign2/pressure_deflection.csv` | Digitized responses for the six second-campaign calibration configurations and the additional bare S30 check. |
-| `data/members/campaign2/ultimate_bearing_capacity.csv` | Specimen-keyed peak channel for the retained second-campaign records. |
-| `data/members/campaign2/capacity_ductility.csv` | Tabulated capacities used by the six additional predictions. |
+`tubes/configurations.csv` describes 16 configurations with 30, 32 or 35 mm
+depth, empty or cement-paste-filled cores, and 0, 1 or 2 mm nominal CFRP wrapping.
+The 2 mm wraps occur at 30 and 32 mm depths. The tabulated peak and maximum of
+the digitized curve are distinct observations used by the peak network's two
+outputs.
 
-The first campaign tested carbon-steel tubes in 2023 at a measured 490 mm
-support span. The second tested stainless-steel tubes in 2022; its production
-span is 450 mm, the upper estimate allowed by the press platform. The support
-spacing itself was not recorded. Both campaigns used a 2 mm tube wall.
+`tubes/curves.csv` contains the digitized curves used in the paper. `point_index`
+preserves their displacement-ordered sequence, including small load reversals.
+Queries use the first upward, piecewise-linear crossing before the curve peak.
+For example, `filled_d30_t2` denotes cement-paste infill, 30 mm depth and 2 mm
+nominal wrapping.
 
-`doc04` and `doc13` in code are stable campaign identifiers, corresponding to
-campaigns 1 and 2. Second-campaign specimen prefixes A/B/C denote tube depths
-35/32/30 mm (S35/S32/S30 in the manuscript). The explicit mapping in
-`analysis/member_data.py` defines the configurations and evaluation roles.
+Sources:
 
-Calibration uses twelve first-campaign and six second-campaign configurations:
-A-1, A-3, B-3, C-1, C-2 and C-3. Four first-campaign 2 mm-wrap configurations
-are development-reserved. The six additional capacity checks are A, B, C, B-1,
-B-2 and A-2. C also has the additional digitized loading response.
-The additional capacities use the experimental source tables 3-2 (A, B, C,
-B-1), 3-4 (B-2) and 3-13 (A-2). Later comparison-table reprintings are omitted.
+- Yuchen Dai (2023), *Research on Anti-Flexural Performance of Small-Caliber
+  CFRP–Square Section Steel Tube Concrete*, master's dissertation,
+  Beijing Jiaotong University (Chinese).
+- Dai, Y., Chen, T. and Wang, F. (2024), *Research on flexural performance of
+  small-caliber CFRP-square section steel tube concrete*, Journal of Central
+  South University (Science and Technology), 55(1), 279–290.
+  [DOI: 10.11817/j.issn.1672-7207.2024.01.023](https://doi.org/10.11817/j.issn.1672-7207.2024.01.023).
 
-`point_type` distinguishes clicked measurements from interpolated points;
-plot identifiers retain the source-plot provenance. Repeated plot appearances
-are combined within one configuration. They do not increase the specimen
-count. Identification truncates each sorted curve at its largest observed
-load and samples at most 24 equally indexed points; scoring uses the complete
-loading branch. For second-campaign calibration, C-1 uses its tabulated peak
-and the other five use curve maxima. No seating or machine-compliance
-correction was applied.
+The supplied coordinates are digitized experimental records. The numerical
+inputs used in the paper are included; instrument acquisition files and
+photographs are not part of this dataset.
 
-## Fitted model
+## Bolted HFRP beams
 
-`data/model/coefficients.json` contains the model identifier and full-precision
-4 × 8 coefficient matrix. Rows correspond to `EI0`, the shared `Mk/Mu`
-activation, the shared tangent-ratio activation and `Mu`. The eight features
-are `1, (d-32)/5, t, t², g, g*t, c, t*c`, with infill indicator `g` and
-second-campaign indicator `c`. The two shape rows contain only an intercept.
-This small file is needed to call the fitted model without refitting.
+`beams/configurations.csv` describes 13 reinforced steel-beam configurations.
+U and ST denote uniform and staggered bolt layouts. Strip lengths are 810,
+1170 and 1620 mm; thicknesses are 3.175 and 6.35 mm. Configuration codes follow
+the cited experimental studies.
 
-## Lining inputs
+`beams/deflections.csv` contains 26 specimen responses at 31 common total loads
+from 50 to 350 kN in 10 kN steps. They were read from the individual curves in
+the dissertation appendix at the first upward crossing before the first global
+load maximum. The loader computes the arithmetic mean of two specimens at each
+force. Both individual observations are retained to represent their spread.
 
-`data/lining/mesh_boundary.npz` contains 16,519 nodes, 31,078 triangles and
-1,029 ordered extrados boundary nodes. Array meanings are:
+`beams/strains.csv` contains two U90S100 training observations and two ST65S100
+evaluation observations at 310 kN. Positions are distances from midspan.
+`beams/connector_law.json` gives the M6 slip/force vertices and the model's
+thickness scaling rule.
 
-| Arrays | Units and role |
-|---|---|
-| `X`, `Y`, `T`, `area` | Node coordinates in mm, zero-based triangle connectivity, element area in mm². |
-| `bnd_idx`, `bnd_normals`, `bnd_tangents`, `bnd_ds` | Ordered boundary nodes, unit directions and nodal boundary lengths in mm. |
-| `traction`, `kn`, `kt` | Reference traction in N/mm² and bedding moduli in N/mm³. |
-| `seed`, `overlay_curvature` | Initial nodal damage lower bound and geometric boundary curvature in mm⁻¹. |
+Sources:
 
-The saved arrays already incorporate the reference ground and water actions,
-20 kPa surcharge, 14.1 m water height above the invert and zero crown bedding.
-`configs/lining.json` stores the material, time schedule and four section
-mappings. Changing descriptive load metadata alone does not regenerate a new
-boundary problem; the corresponding traction and bedding arrays must change.
-Fields, histories and checkpoints are generated by `analysis.lining_demo`.
+- AbouEl-Hamd, O. R., Sweedan, A. M. I. and El-Ariss, B. (2022), *Flexural
+  Performance of Steel Beams Strengthened by Fastened Hybrid FRP Strips
+  Utilizing Staggered Steel Bolts*, Buildings 12, 2150.
+  [DOI: 10.3390/buildings12122150](https://doi.org/10.3390/buildings12122150).
+- AbouEl-Hamd, O. R., Sweedan, A. M. I., El-Ariss, B. and El-Sawy, K. M.
+  (2023), *Experimental and Numerical Investigation of the Behavior of Steel
+  Beams Strengthened by Bolted Hybrid FRP Composites*, Buildings 13, 824.
+  [DOI: 10.3390/buildings13030824](https://doi.org/10.3390/buildings13030824).
+- Abouelhamd, O. R. (2023), *Upgrading the Performance of Steel Beams Using
+  Fastened Advanced Composite Materials*, PhD dissertation, United Arab
+  Emirates University. [DOI: 10.83048/qdmb-bz91](https://doi.org/10.83048/qdmb-bz91).
+- Abou El-Hamd, O. R., Sweedan, A. M. I. and El-Sawy, K. M. (2018),
+  *Experimental and numerical study of the parameters controlling the behavior
+  of double-lap connections of steel plates bolted to hybrid FRP strips*,
+  Thin-Walled Structures 125, 140–151.
+  [DOI: 10.1016/j.tws.2018.01.018](https://doi.org/10.1016/j.tws.2018.01.018).
+
+The two Buildings articles are distributed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The connector curve
+was read from its reproduction in the 2023 Buildings article. Numerical inputs
+retain the source authors' attribution. Source publications and photographs
+are not redistributed here.

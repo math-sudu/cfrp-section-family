@@ -1,9 +1,7 @@
 cff-version: 1.2.0
-message: "If you use this software, cite this repository and its associated manuscript."
+message: "If you use this code or data, cite this repository and the associated manuscript."
 type: software
-title: "CFRP-wrapped tube section family"
-version: 1.0.0
-date-released: 2026-09-28
+title: "Mechanics-informed neural prediction of nonlinear flexural response and load transfer in FRP-strengthened steel members"
 repository-code: "https://github.com/math-sudu/cfrp-section-family"
 authors:
   - family-names: Zhu

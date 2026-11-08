@@ -1,0 +1,20 @@
+{
+  "source": "Abou El-Hamd et al. (2023), Buildings 13, 824, Figure 19, reproducing the M6 joint law of Abou El-Hamd et al. (2018), Thin-Walled Structures 125, 140-151",
+  "source_url": "https://www.mdpi.com/2075-5309/13/3/824",
+  "slip_mm": [
+    0,
+    0.5,
+    2,
+    4,
+    13.5
+  ],
+  "force_kn": [
+    0,
+    1.125,
+    1.25,
+    6.25,
+    11.25
+  ],
+  "reference_strip_thickness_mm": 3.175,
+  "thickness_rule": "At fixed bolt torque, retain the friction and clearance force levels; scale the increments of bearing resistance above the clearance plateau by strip thickness. This is the reduced model assumption, not a measured double-thickness joint law."
+}

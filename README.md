@@ -1,123 +1,102 @@
-# CFRP-wrapped tube section family
+# FRP-strengthened steel member response
 
-Research code and executable input data for **Flexural assessment of CFRP
-composite tubes for tunnel lining reinforcement using an integral constrained
-physics informed neural network**, by Pengcheng Zhu, Tielin Chen, Dingli Zhang,
-Yuchen Dai and Ye Shi.
+Code and input data for **Mechanics-informed neural prediction of nonlinear
+flexural response and load transfer in FRP-strengthened steel members**, by
+Pengcheng Zhu, Tielin Chen, Dingli Zhang, Yuchen Dai and Ye Shi.
 
-This local working version includes the 29 September curve-peak correction:
-all six campaign-2 fitting peaks follow their curves, including S30-1 at
-18.7595 kN. The original published v1.0.0 remains in Git history; these local
-changes have not been pushed or published as a new release.
+The models predict nonlinear bending response for 16 CFRP-wrapped square-tube
+configurations and 13 steel-beam configurations with bolted carbon–glass FRP
+strips. Tube section mechanics determines a response shape and a neural network
+learns its displacement scale. The beam model learns a convex section potential
+through axial–bending equilibrium and predicts deflection and local strip strain.
 
-The model identifies a shared dimensionless moment-curvature shape and two
-configuration-dependent scales from member bending records. Its positive
-tangent stiffness integrates to the identified strength at the terminal
-curvature. The repository includes the fitted model, joint identification,
-leave-one-configuration-out evaluation and the section-mapped lining example.
+## Install
 
-## Installation
-
-The tested environment is Python 3.13 with NumPy 2.4.4, SciPy 1.16.2 and
-PyYAML 6.0.2. Run commands from this repository's root:
+Use Python 3.11 or later and run from the repository root:
 
 ```bash
 python -m pip install -r requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-## Use the fitted model
+The reference environment uses Python 3.13, NumPy 2.4.4, SciPy 1.16.2,
+PyTorch 2.8.0 and threadpoolctl 3.6.0. Computations use CPU float64 and one
+numerical thread; no GPU is required.
+
+## Reproduce predictions
 
 ```bash
-python section_model.py --depth-mm 32 --wrap-mm 2 --grouted --campaign 1
-python -m examples.member_response
+python reproduce.py
 ```
 
-The first command prints the section parameters. Add `--curve section_curve.csv`
-to export its ascending moment-curvature curve. The second evaluates a simply
-supported member under central loading. At a 490 mm span, the filled 32 mm
-tube with a nominal 2 mm wrap has predicted peak load **48.043 kN** and peak-load
-deflection **9.288 mm**.
+This evaluates all four tube exclusions and beam models M_R, M_0, M_B and M_N
+using the supplied data and fitted parameters. It writes individual predictions,
+wrapping savings, errors and strip strains to `results/reproduction.json`.
 
-```python
-import numpy as np
-from section_model import SectionFamily
+Expected values, rounded as in the paper:
 
-family = SectionFamily()
-section = family.section(depth_mm=32, wrap_mm=2, grouted=True, campaign=1)
-kappa = np.linspace(0, section.kappa_u, 201)
-moment = section.moment(kappa)
-secant_stiffness = section.secant_stiffness(kappa)
-inverse_curvature = section.curvature(0.5 * section.Mu)
-```
+| Tube saving RMSE (mm) | Affine amplitude | Neural amplitude |
+| --- | ---: | ---: |
+| At selected forces | 0.127 | 0.071 |
+| Over predicted force windows | 0.125 | 0.081 |
 
-Units are N and mm: moment in N mm, stiffness in N mm² and curvature in mm⁻¹.
-The measured tube depths are 30-35 mm and nominal wraps are 0-2 mm. Campaign 1
-is the carbon-steel campaign; campaign 2 is the stainless-steel campaign.
-`Mk` is the transition scale, stored as `Mcr` in the identification code; the
-actual moment at the transition is obtained from `section.moment(section.kappa_k)`.
-The API covers the ascending branch through the strength endpoint.
+| Beam model | M_R | M_0 | M_F | M_B | M_N |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Aggregate deflection RMSE (mm) | 0.436 | 0.429 | 0.361 | 0.280 | 0.269 |
 
-## Evaluate and refit
+M_N predicts approximately 1254 and 583 microstrain at the ST65S100 gauges
+at 310 kN; the observations are 1300 and 510 microstrain.
+
+M_F solves an additional fiber equilibrium problem and takes longer. Run it
+separately or include it in the complete comparison:
 
 ```bash
-python -m analysis.evaluate
-python -m analysis.refit --n-jobs 6
-python -m analysis.loco --n-jobs 6
-python -m analysis.replicate_scatter
+python reproduce.py --section beams --models M_F --output results/fiber.json
+python reproduce.py --section beams --models M_R M_0 M_F M_B M_N --output results/all_beams.json
 ```
 
-`evaluate` uses the bundled full-precision coefficients and generates the
-18 calibration, four development-reserved and six additional capacity checks.
-`refit` performs the joint coefficient fit. `loco` refits on 21 configurations
-for each of 22 folds. The original four reserved responses were visible during
-model development; that evaluation differs from the 22-fold calculation.
-`replicate_scatter` reads the twelve reported specimen pairs.
+Add `--benchmark` for the Table 4 timing protocol: two warmups and seven measured
+repetitions of the 33-load-state prediction and two-gauge calculation. Geometry
+construction and file reads are excluded; compliance conditioning is included.
+Timings depend on hardware. The paper used an AMD Ryzen Threadripper 3970X.
 
-Settings are in `configs/identification.yaml`. Six seeded restarts are used
-per fit. Fit and cross-validation runtime depends on the machine; `--n-jobs`
-controls concurrent restarts. `--out` selects the generated JSON destination.
-For a newly fitted coefficient file, pass its path to `SectionFamily(fit_path)`
-or use `section_model.py --fit path/to/fit.json ...`.
-
-## Lining example
+## Refit
 
 ```bash
-python -m analysis.lining_demo --case baseline --stop-step 1
-python -m analysis.lining_demo --case baseline
-python -m analysis.lining_demo --case bare_018 --max-sweeps 2000
-python -m analysis.lining_demo --case hybrid_018 --max-sweeps 2000
+python refit.py --component tubes --model peaks --protocol leave_wrap_2 --output results/tubes_peaks.json
+python refit.py --component tubes --model M_T --protocol leave_wrap_2 --parameters results/tubes_peaks.json --output results/tubes_refitted.json
+python reproduce.py --section tubes --tube-parameters results/tubes_refitted.json --output results/tubes_predictions.json
+python refit.py --component beams --model M_N --output results/beams_refitted.json
+python reproduce.py --section beams --models M_N --beam-parameters results/beams_refitted.json --output results/beams_predictions.json
 ```
 
-Other reinforced cases combine `bare`, `filled`, `wrapped` or `hybrid` with
-`_018` or `_036`, the two coverage fractions. The reported `bare_018` and
-`hybrid_018` runs used 2000 maximum stagger sweeps per increment; the other
-cases used the default 600. Twenty increments reach load factor 2. The solver
-resumes its own checkpoint; `--out` selects a separate output directory.
+Other tube protocols are `leave_depth_30`, `leave_depth_32` and `leave_depth_35`.
+A and S are the linear and shared empirical-shape comparisons. Peak refits use
+the published selected penalties and three seeded starts. Response refits select
+penalties using the supplied three configuration folds. M_T refits the section
+shape, projected amplitudes and neural amplitude; the 2 mm exclusion also refits
+the affine comparison. Beam refits accept M_R, M_0, M_B, M_F or M_N. M_N starts
+from an approximation to the training-fitted M_B law, then minimizes the joint
+displacement/strain loss. Beam refitting takes substantially longer than prediction.
+Refit outputs are separate from the supplied fitted coefficients.
 
-`configs/lining.json` and `data/lining/mesh_boundary.npz` supply the resolved
-mesh, loading, bedding, initial crack seed and section mappings. The mesh file
-is an input, approximately 0.74 MB. The frame has independent section rotations
-and is bonded to the lining's extrados translations. The time-increment energy
-includes `eta * (alpha-alpha_prev)**2 / (2*dt)` and damage irreversibility.
+## Files and information conditions
 
-## Included data and generated outputs
+- `data/tubes/`: configurations and digitized displacement–load curves.
+- `data/beams/`: configurations, two specimen responses per design, strain
+  observations and the connector law.
+- `parameters/`: fitted coefficients, networks and configuration partitions.
+- `frp_flexure/tube_mechanics.py`: moment sharing and shape/amplitude calibration.
+- `frp_flexure/tube_network.py`: networks and empirical response comparisons.
+- `frp_flexure/beam.py`: equilibrium, connectors, section models and gradients.
+- [Data sources and conventions](data/README.md): provenance and units.
 
-The required numerical inputs are bundled with the code under `data/`:
+The four 2 mm tube configurations are excluded from their networks' training.
+The three 1170 mm beam configurations supply only their 50–200 kN deflections
+to set reference compliance. Their 250–350 kN deflections and ST65S100 strains
+are evaluation data. The U90S100 strain observations belong to training.
 
-- Member curves and peak-load tables used by the supplied analyses.
-- The fitted coefficient matrix, stored as a small model input in
-  `data/model/coefficients.json`.
-- The resolved lining mesh and boundary arrays.
-
-[Data documentation](data/README.md) gives units, record roles and measurement
-conditions. The digitized curves and tabulated values are the available
-experimental records. Original instrument acquisition files were not retained.
-The second campaign's 450 mm span is an upper estimate from the press platform;
-its support-block spacing was not recorded.
-
-Results, field histories, checkpoints and plots are generated locally and are
-excluded from Git. Manuscript files, inspection photographs and the operating
-line's restricted crack registry are outside this code release.
+The earlier tube-section-family implementation remains in the Git history.
+The current files support the manuscript named above.
 
 For correspondence: Tielin Chen, tlchen1@bjtu.edu.cn.
